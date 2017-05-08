@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -28,8 +29,23 @@ func login(w http.ResponseWriter, r *http.Request) {
 		t, _ := template.ParseFiles("login.gtpl")
 		log.Println(t.Execute(w, nil))
 	} else {
+		// 表单处理
 		fmt.Println("username:", r.Form["username"])
 		fmt.Println("password:", r.Form["password"])
+		// 表单验证 - 必填字端
+		if len(r.Form["username"][0]) == 0 {
+			fmt.Println("Username can not empty.")
+		}
+
+		// form validate - number
+		getint, err := strconv.Atoi(r.Form["username"][0])
+		if err != nil {
+			fmt.Println("not number")
+		}
+
+		if getint > 1000 {
+			fmt.Println("number is so larger.")
+		}
 	}
 
 }
