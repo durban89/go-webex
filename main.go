@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +29,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fmt.Println("method:", r.Method)
 	if r.Method == "GET" {
+		crutime := time.Now().Unix()
+		h := md5.New()
+		io.WriteString(h, strconv.FormatInt(crutime, 10))
+		token := fmt.Sprintf("%x", h.Sum(nil))
+
 		t, _ := template.ParseFiles("login.gtpl")
-		log.Println(t.Execute(w, nil))
+		t.Execute(w, token)
+
+		// log.Println(t.Execute(w, nil))
 	} else {
 		// 表单处理
 		fmt.Println("username:", r.Form["username"])
@@ -45,6 +55,14 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		if getint > 1000 {
 			fmt.Println("number is so larger.")
+		}
+
+		// 防止多次递交表单 - 示例
+		token := r.Form.Get("token")
+		if token != "" {
+			//验证token的合法性
+		} else {
+			//不存在token报错
 		}
 
 		// 预防跨站脚本 - 示例
