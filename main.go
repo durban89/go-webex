@@ -46,6 +46,18 @@ func login(w http.ResponseWriter, r *http.Request) {
 		if getint > 1000 {
 			fmt.Println("number is so larger.")
 		}
+
+		// 预防跨站脚本 - 示例
+		fmt.Println("username:", template.HTMLEscapeString(r.Form["username"][0]))
+		fmt.Println("password:", template.HTMLEscapeString(r.Form["password"][0]))
+
+		// template.HTMLEscape(w, []byte(r.Form["username"][0]))
+
+		// t, err := template.New("foo").Parse(`{{define "T"}}Hello, {{.}}!{{end}}`)
+		// err = t.ExecuteTemplate(w, "T", r.Form["username"][0])
+
+		t, err := template.New("foo").Parse(`{{define "T"}}Hello, {{.}}!{{end}}`)
+		err = t.ExecuteTemplate(w, "T", template.HTML(r.Form["username"][0]))
 	}
 
 }
