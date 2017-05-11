@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"fmt"
 	"html/template"
 	"io"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
@@ -114,10 +117,60 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func mysqlEx(w http.ResponseWriter, r *http.Request) {
+	// CREATE TABLE `userinfo` (
+	// 	`uid` INT(10) NOT NULL AUTO_INCREMENT,
+	// 	`username` VARCHAR(64) NULL DEFAULT NULL,
+	// 	`departname` VARCHAR(64) NULL DEFAULT NULL,
+	// 	`created` DATE NULL DEFAULT NULL,
+	// 	PRIMARY KEY (`uid`)
+	// );
+
+	// CREATE TABLE `userdetail` (
+	// 	`uid` INT(10) NOT NULL DEFAULT '0',
+	// 	`intro` TEXT NULL,
+	// 	`profile` TEXT NULL,
+	// 	PRIMARY KEY (`uid`)
+	// )
+	db, err := sql.Open("mysql", "root:123456@/test?charset=utf8")
+	checkErr(err)
+
+	//插入数据
+	stmt, err := db.Prepare("INSERT userinfo SET username=?,departname=?,created=?")
+	checkErr(err)
+
+	res, err := stmt.Exec("astaxie", "研发部门", "2012-12-09")
+	checkErr(err)
+
+	id, err := res.LastInsertId()
+	checkErr(err)
+
+	fmt.Println(id)
+
+	//update data
+	stmt, err = db.Prepare("update userinfo set username=? where uid = ?")
+	checkErr(err)
+
+	res, err = stmt.Exec("astaxieupdate", id)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()
+	checkErr(err)
+
+	fmt.Println(affect)
+}
+
 func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/upload", upload)
+	http.HandleFunc("/mysqlEx", mysqlEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
