@@ -14,6 +14,8 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +144,81 @@ func mysqlEx(w http.ResponseWriter, r *http.Request) {
 	checkErr(err)
 
 	//插入数据
-	stmt, err := db.Prepare("INSERT userinfo SET username=?,departname=?,created=?")
+	stmt, err := db.Prepare("INSERT INTO userinfo(username,departname, created) values (?,?,?)")
+	checkErr(err)
+
+	res, err := stmt.Exec("astaxie", "研发部门", "2012-12-09")
+	checkErr(err)
+
+	id, err := res.LastInsertId()
+	checkErr(err)
+
+	fmt.Println(id)
+
+	//update data
+	stmt, err = db.Prepare("update userinfo set username=? where uid = ?")
+	checkErr(err)
+
+	res, err = stmt.Exec("astaxieupdate", id)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()
+	checkErr(err)
+
+	fmt.Println(affect)
+
+	//query data
+	rows, err := db.Query("select * from userinfo")
+	checkErr(err)
+
+	for rows.Next() {
+		var uid int
+		var username string
+		var department string
+		var created string
+		err = rows.Scan(&uid, &username, &department, &created)
+		checkErr(err)
+		fmt.Println(uid)
+		fmt.Println(username)
+		fmt.Println(department)
+		fmt.Println(created)
+
+	}
+
+	// delete data
+	stmt, err = db.Prepare("delete from userinfo where uid = ?")
+	checkErr(err)
+
+	res, err = stmt.Exec(id)
+	checkErr(err)
+
+	affect, err = res.RowsAffected()
+	checkErr(err)
+
+	fmt.Println(affect)
+	db.Close()
+}
+
+func sqliteEx(w http.ResponseWriter, r *http.Request) {
+	// CREATE TABLE `userinfo` (
+	// 	`uid` INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	`username` VARCHAR(64) NULL,
+	// 	`departname` VARCHAR(64) NULL,
+	// 	`created` DATE NULL
+	// );
+
+	// CREATE TABLE `userdeatail` (
+	// 	`uid` INT(10) NULL,
+	// 	`intro` TEXT NULL,
+	// 	`profile` TEXT NULL,
+	// 	PRIMARY KEY (`uid`)
+	// );
+
+	db, err := sql.Open("sqlite3", "./data/test.db")
+	checkErr(err)
+
+	// //插入数据
+	stmt, err := db.Prepare("INSERT INTO userinfo(username,departname, created) values (?,?,?)")
 	checkErr(err)
 
 	res, err := stmt.Exec("astaxie", "研发部门", "2012-12-09")
@@ -202,6 +278,7 @@ func main() {
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/mysqlEx", mysqlEx)
+	http.HandleFunc("/sqliteEx", sqliteEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
