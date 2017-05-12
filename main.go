@@ -164,6 +164,37 @@ func mysqlEx(w http.ResponseWriter, r *http.Request) {
 	checkErr(err)
 
 	fmt.Println(affect)
+
+	//query data
+	rows, err := db.Query("select * from userinfo")
+	checkErr(err)
+
+	for rows.Next() {
+		var uid int
+		var username string
+		var department string
+		var created string
+		err = rows.Scan(&uid, &username, &department, &created)
+		checkErr(err)
+		fmt.Println(uid)
+		fmt.Println(username)
+		fmt.Println(department)
+		fmt.Println(created)
+
+	}
+
+	// delete data
+	stmt, err = db.Prepare("delete from userinfo where uid = ?")
+	checkErr(err)
+
+	res, err = stmt.Exec(id)
+	checkErr(err)
+
+	affect, err = res.RowsAffected()
+	checkErr(err)
+
+	fmt.Println(affect)
+	db.Close()
 }
 
 func main() {
