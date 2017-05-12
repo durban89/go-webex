@@ -273,12 +273,91 @@ func sqliteEx(w http.ResponseWriter, r *http.Request) {
 	db.Close()
 }
 
+func postgresqlEx(w http.ResponseWriter, r *http.Request) {
+	// CREATE TABLE userinfo
+	// (
+	// 	uid serial NOT NULL,
+	// 	username character varying(100) NOT NULL,
+	// 	departname character varying(500) NOT NULL,
+	// 	Created date,
+	// 	CONSTRAINT userinfo_pkey PRIMARY KEY (uid)
+	// )
+	// WITH (OIDS=FALSE);
+
+	// CREATE TABLE userdeatail
+	// (
+	// 	uid integer,
+	// 	intro character varying(100),
+	// 	profile character varying(100)
+	// )
+	// WITH(OIDS=FALSE);
+
+	db, err := sql.Open("postgres", "user=root password=123456 dbname=test sslmode=disable")
+	checkErr(err)
+
+	// insert data
+	stmt, err := db.Prepare("INSERT INTO userinfo(username, departname, created) VALUES ($1,$2,$3) RETURNING uid")
+	checkErr(err)
+
+	res, err := stmt.Exec("durban", "研发部门", "2016-05-12")
+	checkErr(err)
+	fmt.Println(res)
+
+	var lastInsertId int
+	err = db.QueryRow("INSERT INTO userinfo(username, departname, created) VALUES ($1,$2,$3) RETURNING uid;", "durban", "研发部门", "2016-05-12").Scan(&lastInsertId)
+	checkErr(err)
+	fmt.Println("最后插入的ID", lastInsertId)
+
+	// update data
+	stmt, err = db.Prepare("update userinfo set username = $1 where uid = $2")
+	checkErr(err)
+
+	res, err = stmt.Exec("durban2", lastInsertId)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()
+	checkErr(err)
+	fmt.Println(affect)
+
+	// query data
+	rows, err := db.Query("SELECT * FROM userinfo")
+	checkErr(err)
+
+	for rows.Next() {
+		var uid int
+		var username string
+		var department string
+		var created string
+		err = rows.Scan(&uid, &username, &department, &created)
+		checkErr(err)
+		fmt.Println(uid)
+		fmt.Println(username)
+		fmt.Println(department)
+		fmt.Println(created)
+	}
+
+	// delete data
+	stmt, err = db.Prepare("delete from userinfo where uid = $1")
+	checkErr(err)
+
+	res, err = stmt.Exec(lastInsertId)
+	checkErr(err)
+
+	affect, err = res.RowsAffected()
+	checkErr(err)
+
+	fmt.Println(affect)
+
+	db.Close()
+}
+
 func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/mysqlEx", mysqlEx)
 	http.HandleFunc("/sqliteEx", sqliteEx)
+	http.HandleFunc("/postgresqlEx", postgresqlEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
