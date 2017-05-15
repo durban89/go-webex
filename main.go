@@ -13,10 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/durban.zhang/webex/helpers/session"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+var globalSessions *session.Manager
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()       // 解析参数 默认是不会解析的
@@ -368,6 +371,13 @@ func cookieEx(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func sessionEx(w http.ResponseWriter, r *http.Request) {
+	sess := globalSessions.SessionStart(w, r)
+	fmt.Println("SessionStart==")
+	fmt.Println(sess)
+	// fmt.Fprintln(sess.Get("username"))
+}
+
 func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/login", login)
@@ -376,8 +386,13 @@ func main() {
 	http.HandleFunc("/sqliteEx", sqliteEx)
 	http.HandleFunc("/postgresqlEx", postgresqlEx)
 	http.HandleFunc("/cookieEx", cookieEx)
+	http.HandleFunc("sessionEx", sessionEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
+}
+
+func init() {
+	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
 }
