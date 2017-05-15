@@ -351,6 +351,23 @@ func postgresqlEx(w http.ResponseWriter, r *http.Request) {
 	db.Close()
 }
 
+func cookieEx(w http.ResponseWriter, r *http.Request) {
+	// set cookie
+	expiration := time.Now()
+	expiration = expiration.AddDate(1, 0, 0)
+	cookie := http.Cookie{Name: "username", Value: "durban", Expires: expiration}
+	http.SetCookie(w, &cookie)
+	// get cookie
+	cookie1, _ := r.Cookie("username")
+	fmt.Fprintln(w, cookie1)
+
+	fmt.Fprintln(w, "All Cookie ========== ")
+	// get all cookie
+	for _, cookie2 := range r.Cookies() {
+		fmt.Fprintln(w, cookie2.Name)
+	}
+}
+
 func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/login", login)
@@ -358,6 +375,7 @@ func main() {
 	http.HandleFunc("/mysqlEx", mysqlEx)
 	http.HandleFunc("/sqliteEx", sqliteEx)
 	http.HandleFunc("/postgresqlEx", postgresqlEx)
+	http.HandleFunc("/cookieEx", cookieEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
