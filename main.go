@@ -14,12 +14,11 @@ import (
 	"time"
 
 	"github.com/durban.zhang/webex/helpers/session"
+	_ "github.com/durban.zhang/webex/helpers/session/providers/memory"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-var globalSessions *session.Manager
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()       // 解析参数 默认是不会解析的
@@ -393,6 +392,8 @@ func main() {
 	}
 }
 
+var globalSessions *session.Manager
 func init() {
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
+	go globalSessions.GC
 }
