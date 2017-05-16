@@ -16,11 +16,67 @@ type Provider struct {
 
 var provider = &Provider{list: list.New()}
 
-func (provider *Provider) SessionInit(sid string) (session.Session, error) {}
-func (provider *Provider) SessionRead(sid string) (session.Session, error) {}
-func (provider *Provider) SessionDestory(sid string) error                 {}
-func (provider *Provider) SessionGC(maxLiftTime int64)                     {}
-func (provider *Provider) SessionUpdate(sid string) error                  {}
+func (provider *Provider) SessionInit(sid string) (session.Session, error) {
+	provider.lock.Lock()
+	defer provider.lock.Unlock()
+	v := make(map[interface{}]interface{}, 0)
+	newsess := &Session{sid: sid, lastAccessTime: time.Now(), value: v}
+	element := provider.list.PushBack(newsess)
+	provider.sessions[sid] = element
+	return newsess, nil
+}
+
+func (provider *Provider) SessionRead(sid string) (session.Session, error) {
+	if element, ok := provider.sessions[sid]; ok {
+		return element.Value.(*Session), nil
+	} else {
+		sess, err := provider.SessionInit(sid)
+		return sess, err
+	}
+
+	return nil, nil
+}
+
+func (provider *Provider) SessionDestory(sid string) error {
+	if element, ok := provider.sessions[sid]; ok {
+		delete(provider.sessions, sid)
+		provider.list.Remove(element)
+		return nil
+	}
+
+	return nil
+}
+
+func (provider *Provider) SessionGC(maxLiftTime int64) {
+	provider.lock.Lock()
+	defer provider.lock.Unlock()
+
+	for {
+		element := provider.list.Back()
+		if element == nil {
+			break
+		}
+
+		if (element.Value.(*Session).lastAccessTime.Unix() + maxLiftTime) < time.Now().Unix() {
+			provider.list.Remove(element)
+			delete(provider.sessions, element.Value.(*Session).sid)
+		} else {
+			break
+		}
+	}
+}
+
+func (provider *Provider) SessionUpdate(sid string) error {
+	provider.lock.Lock()
+	defer provider.lock.Lock()
+	if element, ok := provider.sessions[sid]; ok {
+		element.Value.(*Session).lastAccessTime = time.Now()
+		provider.list.MoveToFront(element)
+		return nil
+	}
+
+	return nil
+}
 
 type Session struct {
 	sid            string                      // session id 唯一标识
@@ -52,10 +108,10 @@ func (s *Session) Delete(key interface{}) error {
 }
 
 func (s *Session) SessionID() string {
-	rerurn s.sid
+	return s.sid
 }
 
 func init() {
-	provider.session = make(map[string]*list.Element, 0)
+	provider.sessions = make(map[string]*list.Element, 0)
 	session.Register("memory", provider)
 }
