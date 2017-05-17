@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 )
 
 var provides = make(map[string]Provider)
@@ -43,8 +44,9 @@ func (manager *Manager) sessionId() string {
 type Provider interface {
 	SessionInit(sid string) (Session, error)
 	SessionRead(sid string) (Session, error)
-	// SessionDestory(sid string) error
-	// SessionGC(maxlifetime int64)
+	SessionUpdate(sid string) error
+	SessionDestory(sid string) error
+	SessionGC(maxLiftTime int64)
 }
 
 type Session interface {
@@ -78,5 +80,11 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 		session, _ = manager.provider.SessionRead(sid)
 		return session
 	}
-	return
+}
+
+func (manager *Manager) GC() {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+	manager.provider.SessionGC(manager.maxlifetime)
+	time.AfterFunc(time.Duration(manager.maxlifetime), func() { manager.GC() })
 }
