@@ -34,6 +34,7 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
+	sess := globalSessions.SessionStart(w, r)
 	r.ParseForm()
 	fmt.Println("method:", r.Method)
 	if r.Method == "GET" {
@@ -84,6 +85,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.New("foo").Parse(`{{define "T"}}Hello, {{.}}!{{end}}`)
 		err = t.ExecuteTemplate(w, "T", template.HTML(r.Form["username"][0]))
+		fmt.Println(err)
+
+		// session
+		sess.Set("username", r.Form["username"][0])
 	}
 
 }
@@ -374,7 +379,8 @@ func sessionEx(w http.ResponseWriter, r *http.Request) {
 	sess := globalSessions.SessionStart(w, r)
 	fmt.Println("SessionStart==")
 	fmt.Println(sess)
-	// fmt.Fprintln(sess.Get("username"))
+	fmt.Fprintln(w, sess.Get("username"))
+	// t.Execute(w, sess.Get("countnum"))
 }
 
 func main() {
@@ -393,7 +399,8 @@ func main() {
 }
 
 var globalSessions *session.Manager
+
 func init() {
 	globalSessions, _ = session.NewManager("memory", "gosessionid", 3600)
-	go globalSessions.GC
+	go globalSessions.GC()
 }
