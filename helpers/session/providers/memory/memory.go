@@ -68,7 +68,7 @@ func (provider *Provider) SessionGC(maxLiftTime int64) {
 
 func (provider *Provider) SessionUpdate(sid string) error {
 	provider.lock.Lock()
-	defer provider.lock.Lock()
+	defer provider.lock.Unlock()
 	if element, ok := provider.sessions[sid]; ok {
 		element.Value.(*Session).lastAccessTime = time.Now()
 		provider.list.MoveToFront(element)
@@ -97,8 +97,6 @@ func (s *Session) Get(key interface{}) interface{} {
 	} else {
 		return nil
 	}
-
-	return nil
 }
 
 func (s *Session) Delete(key interface{}) error {
