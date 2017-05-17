@@ -385,7 +385,7 @@ func main() {
 	http.HandleFunc("/sqliteEx", sqliteEx)
 	http.HandleFunc("/postgresqlEx", postgresqlEx)
 	http.HandleFunc("/cookieEx", cookieEx)
-	http.HandleFunc("sessionEx", sessionEx)
+	http.HandleFunc("/sessionEx", sessionEx)
 	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
